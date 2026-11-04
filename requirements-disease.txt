@@ -1,0 +1,5 @@
+# Leaf-disease classifier (training + inference). Heavy: install only if you train or use models/tomato_resnet18.pt.
+# For a GPU build follow the selector at https://pytorch.org
+-r requirements.txt
+torch>=2.2
+torchvision>=0.17

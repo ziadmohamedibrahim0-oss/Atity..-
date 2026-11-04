@@ -1,0 +1,11 @@
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+scikit-learn>=1.4
+matplotlib>=3.8
+pillow>=10.0
+opencv-python-headless>=4.9
+requests>=2.31
+streamlit>=1.35
+# Light on purpose (fast to deploy, e.g. on Streamlit Cloud).
+# The leaf-disease classifier needs PyTorch: pip install -r requirements-disease.txt

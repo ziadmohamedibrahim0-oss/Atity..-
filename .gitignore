@@ -1,0 +1,12 @@
+__pycache__/
+.venv/
+.pytest_cache/
+*.db
+outputs/
+models/*.pt
+models/*_report.txt
+models/*_confusion.csv
+models/*_metrics.json
+data/plantvillage*/
+data/plantdoc*/
+data/nasa_*.csv

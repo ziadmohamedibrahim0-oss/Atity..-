@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; font-family: "Source Sans Pro", sans-serif; }
+  button {
+    width: 100%; box-sizing: border-box; height: 40px; padding: 0 0.75rem; font: inherit; font-size: 1rem;
+    border-radius: 0.5rem; cursor: pointer; border: 1px solid rgba(128, 128, 128, 0.5);
+    background: transparent; color: inherit;
+  }
+  button:hover:not(:disabled) { border-color: #2E7D32; color: #2E7D32; }
+  button:disabled { opacity: 0.6; cursor: wait; }
+</style>
+</head>
+<body>
+<button id="btn" type="button">&#128205;</button>
+<script>
+(function () {
+  "use strict";
+  var btn = document.getElementById("btn");
+  var texts = {}, started = false, seq = 0;
+
+  function post(type, data) {
+    window.parent.postMessage(Object.assign({ isStreamlitMessage: true, type: type }, data), "*");
+  }
+  function send(value) {                       // ts is unique, so every answer reaches Python as a new value
+    value.ts = Date.now() + "-" + (++seq);
+    post("streamlit:setComponentValue", { value: value, dataType: "json" });
+  }
+  function idle() {
+    btn.disabled = false;
+    btn.textContent = texts.button || "\uD83D\uDCCD";
+  }
+  // The flag lives on the app page, so it survives re-renders of this iframe but is reset when the page reloads.
+  function triedBefore() {
+    try { return window.parent.__agrisenseGpsTried === true; } catch (e) { return false; }
+  }
+  function markTried() {
+    try { window.parent.__agrisenseGpsTried = true; } catch (e) { /* parent not reachable: ignore */ }
+  }
+  function locate() {
+    if (!navigator.geolocation) { send({ error: "unsupported" }); return; }
+    btn.disabled = true;
+    btn.textContent = texts.wait || "...";
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        idle();
+        send({ lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy });
+      },
+      function (err) {
+        idle();
+        send({ error: err && err.code === 1 ? "denied" : "failed" });
+      },
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 300000 }
+    );
+  }
+
+  btn.addEventListener("click", locate);
+  window.addEventListener("message", function (event) {
+    var data = event.data;
+    if (!data || data.type !== "streamlit:render") { return; }
+    var args = data.args || {};
+    texts = args.texts || {};
+    document.documentElement.dir = args.rtl ? "rtl" : "ltr";
+    if (data.theme && data.theme.textColor) { document.body.style.color = data.theme.textColor; }
+    if (!btn.disabled) { idle(); }
+    post("streamlit:setFrameHeight", { height: 44 });
+    if (args.auto && !started && !triedBefore()) {      // first open in this tab: ask once, automatically
+      started = true;
+      markTried();
+      locate();
+    }
+  });
+  post("streamlit:componentReady", { apiVersion: 1 });
+  post("streamlit:setFrameHeight", { height: 44 });
+})();
+</script>
+</body>
+</html>
