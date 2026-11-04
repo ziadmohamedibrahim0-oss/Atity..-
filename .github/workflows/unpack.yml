@@ -1,0 +1,33 @@
+# Unpacks a .zip uploaded to the repository root (e.g. from a phone) and deletes the zip.
+name: Unpack uploaded zip
+on:
+  push:
+    paths: ["*.zip"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unpack, commit, push
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(*.zip)
+          [ "${#files[@]}" -gt 0 ] || { echo "No zip file in the repository root"; exit 0; }
+          zip="${files[0]}"
+          mkdir _unpacked
+          unzip -q "$zip" -d _unpacked
+          top=_unpacked
+          if [ "$(ls -A _unpacked | wc -l)" -eq 1 ] && [ -d "_unpacked/$(ls -A _unpacked)" ]; then
+            top="_unpacked/$(ls -A _unpacked)"
+          fi
+          cp -a "$top"/. .
+          rm -rf _unpacked "$zip"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Unpack $zip"
+          git push
